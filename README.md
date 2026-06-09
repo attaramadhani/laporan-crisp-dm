@@ -13,9 +13,8 @@ Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (par
 - **Laporan Word Otomatis**: Skrip mengekspor seluruh hasil analisis metrik (Accuracy, F1-Macro, ROC-AUC, Specificity), ringkasan CRISP-DM, dan berbagai grafik ke dalam laporan Microsoft Word (`.docx`).
 
 ## 📁 Struktur File & Script
-- `laporan_crisp_dm_v5.py`: Script *Machine Learning* utama yang mengeksekusi pipeline CRISP-DM, melatih model, menjalankan tuning, kalkulasi statistik, serta membuat laporan `.docx`.
-- `uji_wilcoxon.py`: Script terpisah khusus untuk menghitung Uji Statistik Wilcoxon Signed-Rank.
-- `generate_shap_dep.py`: Script terpisah khusus untuk menghasilkan dan merender ulang grafik *SHAP Dependence Plot* dengan cepat menggunakan sistem *cache*.
+- `laporan_crisp_dm_v5.py`: Script *Machine Learning* utama (orisinal) yang mengeksekusi pipeline CRISP-DM.
+- `revisi_reviewer.py`: Script pendamping khusus untuk menjawab tuntutan dari reviewer jurnal (menghitung Uji Wilcoxon 10-Fold CV, kalkulasi Standar Deviasi, evaluasi Specificity, dan merender SHAP Dependence Plot).
 - `.gitignore`: Filter keamanan agar dataset mentah, file *cache* berukuran besar, dan file rahasia lainnya tidak terunggah ke repositori publik.
 
 > **Catatan Privasi**: Dataset asli (`final_dataset_kspr_attala.csv`) dan file *model cache* (`.pkl`) sengaja tidak disertakan di GitHub untuk melindungi privasi responden kesehatan dan menghemat kuota server.
@@ -31,9 +30,9 @@ Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (par
    ```bash
    python laporan_crisp_dm_v5.py
    ```
-5. Untuk mencetak *SHAP Dependence Plot* secara instan (setelah *cache* terbentuk), jalankan:
+5. Untuk memproses metrik tambahan dan plot SHAP hasil evaluasi reviewer, jalankan:
    ```bash
-   python generate_shap_dep.py
+   python revisi_reviewer.py
    ```
 
 ## 📈 Hasil Eksperimen
