@@ -11,7 +11,9 @@ import shap
 
 # --- CONFIGURATION ---
 DATA_FILE = 'final_dataset_kspr_attala.csv'
-CACHE_FILE = 'v5_cache.pkl' # Gunakan cache file yang ada di root directory
+CACHE_FILE = 'output_eksperimen/v5_cache.pkl'
+if not os.path.exists(CACHE_FILE):
+    CACHE_FILE = 'v5_cache.pkl'
 RANDOM_STATE = 42
 N_JOBS = 10
 
