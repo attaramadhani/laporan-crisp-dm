@@ -51,8 +51,8 @@ N_JOBS       = 10     # 10 dari 12 thread
 RANDOM_STATE = 42
 N_ITER_RF    = 50     # ditingkatkan dari 20 → 50 (lebih luas)
 N_ITER_XGB   = 60     # ditingkatkan dari 25 → 60 (lebih luas)
-OUTPUT_FILE  = 'output_eksperimen/Laporan_CRISP_DM_Komputasi_v5.docx'
-CACHE_FILE   = 'output_eksperimen/v5_cache.pkl'
+OUTPUT_FILE  = 'Laporan_CRISP_DM_Komputasi_v5.docx'
+CACHE_FILE   = 'v5_cache.pkl'
 DATA_FILE    = 'final_dataset_kspr_attala.csv'
 
 class_labels = {0: 'Rendah', 1: 'Sedang', 2: 'Tinggi'}
@@ -325,6 +325,30 @@ else:
     }, CACHE_FILE)
     log(f"[CACHE] Tersimpan. Run ulang berikutnya akan langsung pakai cache ini.")
 
+from scipy.stats import wilcoxon
+from sklearn.model_selection import cross_val_score
+
+log("Kalkulasi 10-Fold CV untuk uji statistik Wilcoxon (Mohon tunggu)...")
+cv_wilcoxon = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE)
+rf_cv_scores = cross_val_score(rf_tuned, X, y, cv=cv_wilcoxon, scoring='f1_macro', n_jobs=N_JOBS)
+xgb_cv_scores = cross_val_score(xgb_tuned, X, y, cv=cv_wilcoxon, scoring='f1_macro', n_jobs=N_JOBS)
+stat_w, p_val_w = wilcoxon(rf_cv_scores, xgb_cv_scores)
+rf_cv_mean, rf_cv_std = np.mean(rf_cv_scores), np.std(rf_cv_scores)
+xgb_cv_mean, xgb_cv_std = np.mean(xgb_cv_scores), np.std(xgb_cv_scores)
+
+def calc_specificity(cm):
+    spec = []
+    for i in range(len(cm)):
+        tp = cm[i, i]
+        fn = np.sum(cm[i, :]) - tp
+        fp = np.sum(cm[:, i]) - tp
+        tn = np.sum(cm) - tp - fp - fn
+        spec.append(tn / (tn + fp))
+    return spec
+
+spec_rf = calc_specificity(cm_rf_t)
+spec_xgb = calc_specificity(cm_xgb_t)
+
 # =========================================================== #
 #  PLOTS                                                      #
 # =========================================================== #
@@ -490,6 +514,17 @@ elif hasattr(shap_values_xgb, 'shape') and len(shap_values_xgb.shape) == 3:
     plt.close()
 else:
     shap_xgb_tinggi_buf = None
+
+try:
+    plt.figure()
+    shap.dependence_plot("umur_ibu_tahun", shap_values_xgb, X_test_sample, show=False)
+    plt.title("XGBoost SHAP Dependence Plot: Usia Ibu", pad=20)
+    plt.tight_layout()
+    shap_xgb_dep_buf = fig_to_bytes(plt.gcf())
+    plt.close()
+except Exception as e:
+    log(f"Gagal membuat SHAP dependence plot: {e}")
+    shap_xgb_dep_buf = None
 
 # =========================================================== #
 #  6. BUAT DOKUMEN WORD                                       #
@@ -786,11 +821,33 @@ h(2, '5.2 Confusion Matrix (4 Model)')
 doc.add_picture(cm_buf, width=Inches(6.0))
 doc.add_paragraph()
 
-h(2, '5.3 Feature Importance – Model Terbaik (Tuned)')
+h(2, '5.3 Uji Statistik Wilcoxon Signed-Rank')
+para('Dilakukan 10-Fold Cross-Validation untuk membuktikan signifikansi perbedaan performa antara Random Forest dan XGBoost.')
+add_table(
+    ['Model', 'CV F1-Macro (Mean ± Std)'],
+    [
+        ('Random Forest (Tuned)', f'{rf_cv_mean:.4f} ± {rf_cv_std:.4f}'),
+        ('XGBoost (Tuned)', f'{xgb_cv_mean:.4f} ± {xgb_cv_std:.4f}')
+    ]
+)
+wilcoxon_result = "SIGNIFIKAN" if p_val_w < 0.05 else "TIDAK SIGNIFIKAN"
+para(f"P-value Wilcoxon: {p_val_w:.5e} -> Perbedaan performa {wilcoxon_result} secara statistik (p < 0.05).", bold=True)
+
+h(2, '5.4 Specificity per Kelas')
+add_table(
+    ['Kelas', 'Specificity RF', 'Specificity XGBoost'],
+    [
+        ('KRR/Rendah (0)', f'{spec_rf[0]:.4f}', f'{spec_xgb[0]:.4f}'),
+        ('KRT/Sedang (1)', f'{spec_rf[1]:.4f}', f'{spec_xgb[1]:.4f}'),
+        ('KRST/Tinggi (2)', f'{spec_rf[2]:.4f}', f'{spec_xgb[2]:.4f}')
+    ]
+)
+
+h(2, '5.5 Feature Importance – Model Terbaik (Tuned)')
 doc.add_picture(fi_buf, width=Inches(6.0))
 doc.add_page_break()
 
-h(2, '5.4 Classification Report')
+h(2, '5.6 Classification Report')
 report_names = ['KRR/Rendah (0)', 'KRT/Sedang (1)', 'KRST/Tinggi (2)']
 
 rep_str_rf_b  = classification_report(y_test, y_pred_rf_b,  target_names=report_names)
@@ -826,6 +883,10 @@ para('SHAP XGBoost (Tuned)', bold=True)
 doc.add_picture(shap_xgb_buf, width=Inches(6.0))
 if shap_xgb_tinggi_buf:
     doc.add_picture(shap_xgb_tinggi_buf, width=Inches(6.0))
+
+if shap_xgb_dep_buf:
+    para('SHAP XGBoost Dependence Plot (Usia Ibu)', bold=True)
+    doc.add_picture(shap_xgb_dep_buf, width=Inches(6.0))
 
 doc.add_page_break()
 
