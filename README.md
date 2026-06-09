@@ -17,7 +17,7 @@ This project conducts a comparative analysis between the **Random Forest** (para
 - `analisis_statistik_v5.py`: A dedicated companion script for advanced statistical analysis computations (calculating 10-Fold CV Wilcoxon Test, Standard Deviation, Specificity evaluation, and rendering SHAP Dependence Plots).
 - `.gitignore`: Security filter to prevent raw datasets, large cache files, and other confidential files from being uploaded to the public repository.
 
-> **Privacy Note**: The original dataset (`final_dataset_kspr_attala.csv`) and model cache files (`.pkl`) are intentionally excluded from GitHub to protect health respondent privacy and save server quota.
+> **Privacy Note**: The original dataset (`final_dataset_kspr_attala.csv`), sourced from the [Ministry of Health of the Republic of Indonesia](https://layanandata.kemkes.go.id/), and model cache files (`.pkl`) are intentionally excluded from GitHub to protect health respondent privacy and save server quota.
 
 ## 🛠️ How to Run
 1. Ensure Python 3.x is installed on your system.
@@ -66,7 +66,7 @@ Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (par
 - `analisis_statistik_v5.py`: Script pendamping khusus untuk komputasi analisis statistik tingkat lanjut (menghitung Uji Wilcoxon 10-Fold CV, kalkulasi Standar Deviasi, evaluasi Specificity, dan merender SHAP Dependence Plot).
 - `.gitignore`: Filter keamanan agar dataset mentah, file *cache* berukuran besar, dan file rahasia lainnya tidak terunggah ke repositori publik.
 
-> **Catatan Privasi**: Dataset asli (`final_dataset_kspr_attala.csv`) dan file *model cache* (`.pkl`) sengaja tidak disertakan di GitHub untuk melindungi privasi responden kesehatan dan menghemat kuota server.
+> **Catatan Privasi**: Dataset asli (`final_dataset_kspr_attala.csv`) yang bersumber dari [Kementerian Kesehatan RI](https://layanandata.kemkes.go.id/) dan file *model cache* (`.pkl`) sengaja tidak disertakan di GitHub untuk melindungi privasi responden kesehatan dan menghemat kuota server.
 
 ## 🛠️ Cara Menjalankan
 1. Pastikan Python 3.x telah terinstal di sistem Anda.
