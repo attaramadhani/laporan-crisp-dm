@@ -55,7 +55,7 @@ OUTPUT_FILE  = 'output_eksperimen/Laporan_CRISP_DM_Komputasi_v5.docx'
 CACHE_FILE   = 'output_eksperimen/v5_cache.pkl'
 DATA_FILE    = 'final_dataset_kspr_attala.csv'
 
-class_labels = {0: 'Rendah', 1: 'Sedang', 2: 'Tinggi'}
+class_labels = {0: 'Low', 1: 'Moderate', 2: 'High'}
 
 def log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
@@ -63,14 +63,14 @@ def log(msg):
 # =========================================================== #
 #  1. LOAD DATA                                               #
 # =========================================================== #
-log("1/6 Load data...")
+log("1/6 Loading data...")
 try:
     df = pd.read_csv(DATA_FILE)
 except FileNotFoundError:
-    log(f"ERROR: File '{DATA_FILE}' tidak ditemukan.")
+    log(f"ERROR: File '{DATA_FILE}' not found.")
     sys.exit(1)
 except Exception as e:
-    log(f"ERROR saat membaca file: {e}")
+    log(f"ERROR reading file: {e}")
     sys.exit(1)
 
 n_rows_raw      = len(df)
@@ -81,19 +81,16 @@ missing_total   = int(df.isnull().sum().sum())
 # =========================================================== #
 #  2. PREPROCESSING                                           #
 # =========================================================== #
-log("2/6 Preprocessing...")
-
-id_cols   = ['id_anggota_rt', 'id_rumah_tangga', 'id_provinsi', 'id_kabupaten']
+log("2/6 Feature Selection (Removing Leakage/ID features)...")
 drop_cols = ['label_risiko']
 
+id_cols = ['id_anggota_rt', 'id_rumah_tangga', 'id_provinsi', 'id_kabupaten']
 for c in id_cols:
     if c in df.columns:
         drop_cols.append(c)
 
-if 'metode_persalinan_sesar' in df.columns:
-    drop_cols.append('metode_persalinan_sesar')
-if 'operasi_caesar' in df.columns:
-    drop_cols.append('operasi_caesar')
+if 'metode_persalinan_sesar' in df.columns: drop_cols.append('metode_persalinan_sesar')
+if 'operasi_caesar' in df.columns:          drop_cols.append('operasi_caesar')
 
 X = df.drop(drop_cols, axis=1)
 y = df['label_risiko']
@@ -104,7 +101,7 @@ n_features = X.shape[1]
 #     SMOTE tidak dilakukan di sini — hanya split saja        #
 #     SMOTE akan masuk ke dalam pipeline CV                   #
 # =========================================================== #
-log("3/6 Train-Test Split (SMOTE masuk ke pipeline CV)...")
+log("3/6 Train-Test Split (80/20 Stratified)...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
 )
@@ -122,7 +119,7 @@ os.makedirs('output_eksperimen', exist_ok=True)
 #  CACHING: Load hasil jika sudah pernah dihitung             #
 # =========================================================== #
 if os.path.exists(CACHE_FILE):
-    log(f"[CACHE] Ditemukan cache '{CACHE_FILE}' — skip training & tuning, load langsung.")
+    log(f"[CACHE] Cache '{CACHE_FILE}' found -> skipping training & tuning, loading directly.")
     cache = joblib.load(CACHE_FILE)
     # Baseline
     acc_rf_b      = cache['acc_rf_b']
@@ -175,7 +172,7 @@ else:
     # =========================================================== #
     #  4. BASELINE MODELS (SMOTE di luar, tanpa tuning)           #
     # =========================================================== #
-    log("4/6 Baseline models (SMOTE di luar, tanpa tuning)...")
+    log("4/6 Defining ImbPipeline (SMOTE + Model)...")
 
     smote_base = SMOTE(random_state=RANDOM_STATE)
     X_train_s, y_train_s = smote_base.fit_resample(X_train, y_train)
@@ -344,8 +341,8 @@ plot_data = [
 ]
 for ax, (cm, ttl) in zip(axes.flatten(), plot_data):
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
-                xticklabels=['Rendah','Sedang','Tinggi'],
-                yticklabels=['Rendah','Sedang','Tinggi'])
+                xticklabels=['Low','Moderate','High'],
+                yticklabels=['Low','Moderate','High'])
     ax.set_title(ttl, fontsize=11, fontweight='bold')
     ax.set_xlabel('Prediksi'); ax.set_ylabel('Aktual')
 plt.suptitle('Confusion Matrix – Baseline vs Tuned (ImbPipeline)', fontsize=13, fontweight='bold')
@@ -394,7 +391,7 @@ log("Plot kurva ROC (OvR per kelas, 4 model)...")
 
 classes_list  = [0, 1, 2]
 class_colors  = ['#e84393', '#f59e0b', '#10b981']
-class_labels_roc = ['Rendah (0)', 'Sedang (1)', 'Tinggi (2)']
+class_labels_roc = ['Low (0)', 'Moderate (1)', 'High (2)']
 
 y_test_bin = label_binarize(y_test, classes=classes_list)
 
@@ -548,32 +545,32 @@ def add_monospaced_block(text):
     return p
 
 # ═══════════════════════════════════════════════════════════ #
-#  HALAMAN JUDUL                                              #
+#  TITLE PAGE                                                 #
 # ═══════════════════════════════════════════════════════════ #
 h(0, '')
-p_title = doc.add_heading('Laporan Penelitian (Versi 5)', 0)
+p_title = doc.add_heading('Research Report (Version 5)', 0)
 p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
 p_sub = doc.add_heading(
-    'Klasifikasi Risiko Kehamilan menggunakan\n'
+    'Pregnancy Risk Classification using\n'
     'Random Forest & XGBoost\n'
-    'SMOTE dalam ImbPipeline + Hyperparameter Tuning (Metodologi Benar)\n'
-    '(Dataset Final: KSPR Attala)', 1)
+    'SMOTE within ImbPipeline + Hyperparameter Tuning (Correct Methodology)\n'
+    '(Final Dataset: KSPR Attala)', 1)
 p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
 for txt in [
-    'Kerangka Kerja: CRISP-DM (Cross-Industry Standard Process for Data Mining)',
+    'Framework: CRISP-DM (Cross-Industry Standard Process for Data Mining)',
     'Hardware: MSI Cyborg 15 A13V (Intel Core i5-13420H)',
-    f'Tanggal Eksperimen: {time.strftime("%d %B %Y")}',
+    f'Experiment Date: {time.strftime("%d %B %Y")}',
 ]:
     para(txt, align=WD_ALIGN_PARAGRAPH.CENTER)
 
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  RINGKASAN EKSEKUTIF                                        #
+#  EXECUTIVE SUMMARY                                          #
 # ═══════════════════════════════════════════════════════════ #
-h(1, 'Ringkasan Eksekutif')
+h(1, 'Executive Summary')
 
 best_scores = {
     'RF Baseline':  roc_rf_b,
@@ -587,22 +584,22 @@ best_f1   = {'RF Baseline': f1_rf_b, 'XGB Baseline': f1_xgb_b,
              'RF Tuned': f1_rf_t, 'XGB Tuned': f1_xgb_t}[best_name]
 
 para(
-    f'Penelitian versi 5 ini menerapkan perbaikan metodologi kritis dibanding versi 2: '
-    f'SMOTE diintegrasikan ke dalam imblearn.Pipeline sehingga resampling hanya terjadi '
-    f'pada training fold — menghindari kebocoran data (data leakage) ke validation fold '
-    f'dalam proses cross-validation. N_ITER ditingkatkan menjadi {N_ITER_RF} (RF) dan '
-    f'{N_ITER_XGB} (XGB) untuk pencarian hyperparameter yang lebih luas. '
-    f'Dataset final_dataset_kspr_attala.csv dengan {n_rows_raw:,} observasi digunakan. '
-    f'Model terbaik adalah {best_name} dengan ROC-AUC = {best_roc:.4f}.'
+    f'This Version 5 research implements critical methodological improvements over Version 2: '
+    f'SMOTE is integrated into imblearn.Pipeline so that resampling only occurs '
+    f'on the training fold — avoiding data leakage to the validation fold '
+    f'during cross-validation. N_ITER is increased to {N_ITER_RF} (RF) and '
+    f'{N_ITER_XGB} (XGB) for a broader hyperparameter search. '
+    f'The final dataset final_dataset_kspr_attala.csv with {n_rows_raw:,} observations was used. '
+    f'The best model is {best_name} with an ROC-AUC = {best_roc:.4f}.'
 )
 
 add_table(
-    ['Metrik', 'RF Baseline', 'XGB Baseline', 'RF Tuned', 'XGB Tuned'],
+    ['Metric', 'RF Baseline', 'XGB Baseline', 'RF Tuned', 'XGB Tuned'],
     [
         ('Accuracy',  f'{acc_rf_b:.4f}',  f'{acc_xgb_b:.4f}',  f'{acc_rf_t:.4f}',  f'{acc_xgb_t:.4f}'),
         ('F1-Macro',  f'{f1_rf_b:.4f}',   f'{f1_xgb_b:.4f}',   f'{f1_rf_t:.4f}',   f'{f1_xgb_t:.4f}'),
         ('ROC-AUC',   f'{roc_rf_b:.4f}',  f'{roc_xgb_b:.4f}',  f'{roc_rf_t:.4f}',  f'{roc_xgb_t:.4f}'),
-        ('Waktu Fit', f'{time_rf_base:.2f}s', f'{time_xgb_base:.2f}s',
+        ('Fit Time', f'{time_rf_base:.2f}s', f'{time_xgb_base:.2f}s',
                       f'{time_rf_tune/60:.1f}m', f'{time_xgb_tune/60:.1f}m'),
     ]
 )
@@ -610,170 +607,170 @@ doc.add_picture(roc_buf, width=Inches(5.5))
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  BAB 1: BUSINESS UNDERSTANDING                              #
+#  CHAPTER 1: BUSINESS UNDERSTANDING                          #
 # ═══════════════════════════════════════════════════════════ #
-h(1, '1. Business Understanding (Pemahaman Bisnis)')
+h(1, '1. Business Understanding')
 para(
-    'Kematian ibu merupakan salah satu indikator derajat kesehatan yang paling sensitif. '
-    'Deteksi dini risiko kehamilan sangat penting agar intervensi medis dapat diberikan tepat waktu. '
-    'Skor Poedji Rochjati (KSPR) adalah sistem pakar berbasis skor yang digunakan bidan/dokter '
-    'untuk menentukan tingkat risiko kehamilan. Otomasi klasifikasi ini melalui machine learning '
-    'diharapkan dapat mempercepat dan menstandardisasi proses identifikasi risiko.'
+    'Maternal mortality is one of the most sensitive indicators of health status. '
+    'Early detection of pregnancy risks is crucial so that medical interventions can be provided in a timely manner. '
+    'The Poedji Rochjati Score Card (KSPR) is an expert system based on scores used by midwives/doctors '
+    'to determine the level of pregnancy risk. Automating this classification through machine learning '
+    'is expected to accelerate and standardize the risk identification process.'
 )
-h(2, '1.1 Tujuan Bisnis')
+h(2, '1.1 Business Objectives')
 for t in [
-    'Membangun model ML yang akurat untuk klasifikasi risiko kehamilan (multikelas).',
-    'Membandingkan performa Random Forest vs XGBoost secara kuantitatif.',
-    'Menangani imbalanced class dengan SMOTE yang diintegrasikan ke dalam pipeline CV.',
-    'Meningkatkan performa model melalui Hyperparameter Tuning dengan metodologi yang benar.',
-    'Mengidentifikasi faktor klinis paling berpengaruh menggunakan SHAP.',
+    'Build an accurate ML model for pregnancy risk classification (multiclass).',
+    'Quantitatively compare the performance of Random Forest vs XGBoost.',
+    'Handle imbalanced classes with SMOTE integrated into the CV pipeline.',
+    'Improve model performance through Hyperparameter Tuning with the correct methodology.',
+    'Identify the most influential clinical factors using SHAP.',
 ]:
     bullet(t)
 
-h(2, '1.2 Kriteria Keberhasilan')
+h(2, '1.2 Success Criteria')
 add_table(
-    ['Kriteria', 'Target'],
+    ['Criteria', 'Target'],
     [
         ('ROC-AUC (OvR)',          '≥ 0.90'),
         ('F1-score Macro',         '≥ 0.80'),
-        ('Tidak ada data leakage', 'Terbukti dari analisis fitur & pipeline CV'),
-        ('Waktu inferensi',        '< 1 detik per observasi'),
+        ('No data leakage',        'Proven by feature analysis & CV pipeline'),
+        ('Inference time',         '< 1 second per observation'),
     ]
 )
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  BAB 2: DATA UNDERSTANDING                                  #
+#  CHAPTER 2: DATA UNDERSTANDING                              #
 # ═══════════════════════════════════════════════════════════ #
-h(1, '2. Data Understanding (Pemahaman Data)')
-h(2, '2.1 Sumber dan Deskripsi Data')
+h(1, '2. Data Understanding')
+h(2, '2.1 Data Source and Description')
 para(
-    'Dataset bersumber dari Survei Kesehatan Indonesia (SKI) 2023. '
-    'Label risiko kehamilan ditentukan berdasarkan Skor Poedji Rochjati (KSPR) '
-    'yang merupakan sistem pakar yang diakui secara klinis di Indonesia. '
-    'Distribusi kelas bersifat imbalanced: kelas Sedang mendominasi dataset.'
+    'The dataset is sourced from the 2023 Indonesian Health Survey (SKI). '
+    'Pregnancy risk labels are determined based on the Poedji Rochjati Score Card (KSPR) '
+    'which is a clinically recognized expert system in Indonesia. '
+    'The class distribution is imbalanced: the Moderate Risk class dominates the dataset.'
 )
 add_table(
-    ['Karakteristik', 'Nilai'],
+    ['Characteristic', 'Value'],
     [
-        ('Jumlah Observasi',           f'{n_rows_raw:,}'),
-        ('Jumlah Kolom (raw)',          str(n_cols_raw)),
-        ('Jumlah Fitur (setelah prep)', str(n_features)),
-        ('Missing Value',               str(missing_total)),
+        ('Total Observations',          f'{n_rows_raw:,}'),
+        ('Total Columns (raw)',         str(n_cols_raw)),
+        ('Total Features (after prep)', str(n_features)),
+        ('Missing Values',              str(missing_total)),
         ('Format',                      'CSV'),
         ('Target Variable',             'label_risiko'),
-        ('Jumlah Kelas Target',         '3'),
+        ('Number of Target Classes',    '3'),
     ]
 )
-h(2, '2.2 Distribusi Kelas Data Asli')
+h(2, '2.2 Original Data Class Distribution')
 add_table(
-    ['Kelas', 'Label', 'Jumlah', 'Proporsi (%)'],
+    ['Class', 'Label', 'Count', 'Proportion (%)'],
     [
         (str(k), class_labels[k], str(v), f'{v/n_rows_raw*100:.1f}%')
         for k, v in sorted(target_dist_raw.items())
     ]
 )
-h(2, '2.3 Identifikasi Potensi Masalah')
+h(2, '2.3 Identification of Potential Issues')
 for item in [
-    'Imbalanced Class: Kelas Rendah (0) sangat sedikit dibanding Sedang (1) → diatasi dengan SMOTE di dalam pipeline.',
-    'Data Leakage (Fitur): "operasi_caesar" / "metode_persalinan_sesar" merupakan informasi post-partum → dihapus.',
-    'Data Leakage (CV): SMOTE di luar CV menyebabkan data sintetis bocor ke validation fold → diatasi dengan ImbPipeline.',
-    'Identifikasi ID unik (id_anggota, rumah_tangga, dll.) → didrop untuk mencegah overfitting.',
+    'Imbalanced Class: Low Risk (0) is very rare compared to Moderate (1) → handled with SMOTE inside the pipeline.',
+    'Data Leakage (Features): "operasi_caesar" / "metode_persalinan_sesar" are post-partum information → dropped.',
+    'Data Leakage (CV): Applying SMOTE outside CV causes synthetic data to leak into validation folds → handled with ImbPipeline.',
+    'Identification of unique IDs (member_id, household, etc.) → dropped to prevent overfitting.',
 ]:
     bullet(item)
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  BAB 3: DATA PREPARATION                                    #
+#  CHAPTER 3: DATA PREPARATION                                #
 # ═══════════════════════════════════════════════════════════ #
-h(1, '3. Data Preparation (Persiapan Data)')
-h(2, '3.1 Penghapusan Fitur Leakage & ID')
+h(1, '3. Data Preparation')
+h(2, '3.1 Removal of Leakage & ID Features')
 para(
-    'Kolom unik (ID) serta variabel metode persalinan/caesar dihapus karena merepresentasikan '
-    'informasi yang tidak tersedia saat prediksi dilakukan (informasi paska persalinan). '
-    'Penggunaan variabel ini akan membuat evaluasi model tidak realistis.'
+    'Unique columns (IDs) as well as delivery/cesarean method variables were removed because they represent '
+    'information that is not available at the time the prediction is made (post-partum information). '
+    'Using these variables would make the model evaluation unrealistic.'
 )
 h(2, '3.2 Train-Test Split')
 add_table(
-    ['Subset', 'Proporsi', 'Jumlah Baris', 'Keterangan'],
+    ['Subset', 'Proportion', 'Row Count', 'Description'],
     [
-        ('Training Set', '80%', f'{len(X_train):,}', 'Digunakan melatih + tuning model'),
-        ('Test Set',     '20%', f'{len(X_test):,}',  'Hanya digunakan evaluasi akhir'),
+        ('Training Set', '80%', f'{len(X_train):,}', 'Used for training + tuning models'),
+        ('Test Set',     '20%', f'{len(X_test):,}',  'Used exclusively for final evaluation'),
     ]
 )
-para('Parameter stratify=y memastikan proporsi kelas sama di training dan test set.')
+para('The stratify=y parameter ensures that the class proportions are identical in the training and test sets.')
 
-h(2, '3.3 SMOTE – Penanganan Imbalanced Class')
+h(2, '3.3 SMOTE – Handling Imbalanced Classes')
 add_table(
-    ['Kelas', 'Label', 'Sebelum SMOTE', 'Estimasi Sesudah SMOTE'],
+    ['Class', 'Label', 'Before SMOTE', 'Estimated After SMOTE'],
     [
         (str(k), class_labels[k], str(dist_train_original.get(k, 0)), str(dist_after_smote.get(k, 0)))
         for k in sorted(dist_after_smote.keys())
     ]
 )
 para(
-    'SMOTE diterapkan di dalam imblearn.Pipeline sehingga resampling hanya terjadi pada '
-    'training fold di setiap iterasi cross-validation. Validation fold selalu menggunakan '
-    'data asli (tidak sintetis), menghasilkan estimasi performa yang lebih realistis. '
-    'Ini adalah perbaikan metodologi utama dibanding versi 2.'
+    'SMOTE is applied inside the imblearn.Pipeline so that resampling only occurs on the '
+    'training fold in each cross-validation iteration. The validation fold always uses '
+    'original (non-synthetic) data, yielding more realistic performance estimates. '
+    'This is the main methodological improvement compared to version 2.'
 )
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  BAB 4: MODELING                                            #
+#  CHAPTER 4: MODELING                                        #
 # ═══════════════════════════════════════════════════════════ #
-h(1, '4. Modeling (Pemodelan)')
-h(2, '4.1 Deskripsi Algoritma')
+h(1, '4. Modeling')
+h(2, '4.1 Algorithm Description')
 h(3, 'Random Forest')
 para(
-    'Random Forest adalah metode ensemble berbasis bagging yang membangun sejumlah '
-    'pohon keputusan (decision tree) secara paralel. Setiap pohon dilatih pada subset '
-    'acak dari data dan fitur. Prediksi akhir ditentukan melalui voting mayoritas.'
+    'Random Forest is an ensemble method based on bagging that builds a number of '
+    'decision trees in parallel. Each tree is trained on a random subset '
+    'of data and features. The final prediction is determined through majority voting.'
 )
 h(3, 'XGBoost (Extreme Gradient Boosting)')
 para(
-    'XGBoost adalah metode ensemble berbasis boosting yang membangun pohon secara '
-    'sekuensial. XGBoost digunakan karena tingkat akurasinya yang tinggi, efisiensi '
-    'komputasi, dan robustness terhadap outlier.'
+    'XGBoost is an ensemble method based on boosting that builds trees '
+    'sequentially. XGBoost is used due to its high accuracy, computational '
+    'efficiency, and robustness against outliers.'
 )
-h(2, '4.2 Perbaikan Metodologi v5: ImbPipeline')
+h(2, '4.2 v5 Methodology Improvement: ImbPipeline')
 para(
-    'Perbedaan utama v5 dari v2 adalah penggunaan imblearn.pipeline.Pipeline '
-    '(ImbPipeline) yang menggabungkan SMOTE dan model ke dalam satu pipeline. '
-    'Saat RandomizedSearchCV melakukan cross-validation, pipeline memastikan:'
+    'The main difference of v5 from v2 is the use of imblearn.pipeline.Pipeline '
+    '(ImbPipeline) which combines SMOTE and the model into a single pipeline. '
+    'When RandomizedSearchCV performs cross-validation, the pipeline ensures:'
 )
 for item in [
-    'Training fold: SMOTE diterapkan → model dilatih pada data yang di-resample.',
-    'Validation fold: Data asli (tidak sintetis) → estimasi performa yang valid.',
-    'Tidak ada data sintetis dari validation fold yang "membocor" ke proses seleksi parameter.',
+    'Training fold: SMOTE applied → model trained on resampled data.',
+    'Validation fold: Original data (non-synthetic) → valid performance estimates.',
+    'No synthetic data from the validation fold "leaks" into the parameter selection process.',
 ]:
     bullet(item)
 
-h(2, '4.3 Strategi Hyperparameter Tuning')
-para('RandomizedSearchCV dipilih dibanding GridSearchCV karena lebih hemat komputasi.')
+h(2, '4.3 Hyperparameter Tuning Strategy')
+para('RandomizedSearchCV was chosen over GridSearchCV as it is more computationally efficient.')
 add_table(
-    ['Parameter Konfigurasi', 'Nilai', 'Keterangan'],
+    ['Configuration Parameter', 'Value', 'Description'],
     [
-        ('n_iter RF',  str(N_ITER_RF),  f'{N_ITER_RF}×5 = {N_ITER_RF*5} fits (ditingkatkan dari 20)'),
-        ('n_iter XGB', str(N_ITER_XGB), f'{N_ITER_XGB}×5 = {N_ITER_XGB*5} fits (ditingkatkan dari 25)'),
-        ('cv',         '5 (Stratified)', 'StratifiedKFold menjaga proporsi kelas tiap fold'),
-        ('scoring',    'f1_macro',       'Evaluasi merata untuk semua kelas'),
-        ('n_jobs',     str(N_JOBS),      'Alokasikan ke thread CPU'),
-        ('max_depth',  '10–25 (tanpa None)', 'None dihapus untuk cegah overfitting'),
+        ('n_iter RF',  str(N_ITER_RF),  f'{N_ITER_RF}×5 = {N_ITER_RF*5} fits (increased from 20)'),
+        ('n_iter XGB', str(N_ITER_XGB), f'{N_ITER_XGB}×5 = {N_ITER_XGB*5} fits (increased from 25)'),
+        ('cv',         '5 (Stratified)', 'StratifiedKFold maintains class proportions per fold'),
+        ('scoring',    'f1_macro',       'Equally evaluates all classes'),
+        ('n_jobs',     str(N_JOBS),      'Allocated to CPU threads'),
+        ('max_depth',  '10–25 (no None)', 'None removed to prevent overfitting'),
     ]
 )
-h(2, '4.4 Hyperparameter Terbaik')
+h(2, '4.4 Best Hyperparameters')
 para(f'RF Best Params  : {rf_best}')
 para(f'XGB Best Params : {xgb_best}')
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  BAB 5: EVALUATION                                          #
+#  CHAPTER 5: EVALUATION                                      #
 # ═══════════════════════════════════════════════════════════ #
-h(1, '5. Evaluation (Evaluasi)')
-h(2, '5.1 Perbandingan Metrik Evaluasi')
+h(1, '5. Evaluation')
+h(2, '5.1 Evaluation Metric Comparison')
 add_table(
-    ['Model', 'Skenario', 'Accuracy', 'F1-Macro', 'ROC-AUC (OvR)'],
+    ['Model', 'Scenario', 'Accuracy', 'F1-Macro', 'ROC-AUC (OvR)'],
     [
         ('Random Forest', 'Baseline',        f'{acc_rf_b:.4f}',  f'{f1_rf_b:.4f}',  f'{roc_rf_b:.4f}'),
         ('XGBoost',       'Baseline',        f'{acc_xgb_b:.4f}', f'{f1_xgb_b:.4f}', f'{roc_xgb_b:.4f}'),
@@ -782,16 +779,16 @@ add_table(
     ]
 )
 
-h(2, '5.2 Confusion Matrix (4 Model)')
+h(2, '5.2 Confusion Matrix (4 Models)')
 doc.add_picture(cm_buf, width=Inches(6.0))
 doc.add_paragraph()
 
-h(2, '5.3 Feature Importance – Model Terbaik (Tuned)')
+h(2, '5.3 Feature Importance – Best Model (Tuned)')
 doc.add_picture(fi_buf, width=Inches(6.0))
 doc.add_page_break()
 
 h(2, '5.4 Classification Report')
-report_names = ['KRR/Rendah (0)', 'KRT/Sedang (1)', 'KRST/Tinggi (2)']
+report_names = ['Low Risk (0)', 'Moderate Risk (1)', 'High Risk (2)']
 
 rep_str_rf_b  = classification_report(y_test, y_pred_rf_b,  target_names=report_names)
 rep_str_xgb_b = classification_report(y_test, y_pred_xgb_b, target_names=report_names)
@@ -803,19 +800,19 @@ add_monospaced_block(f"Classification Report - XGBoost Baseline:\n\n{rep_str_xgb
 add_monospaced_block(f"Classification Report - Random Forest Tuned (Pipeline):\n\n{rep_str_rf_t}")
 add_monospaced_block(f"Classification Report - XGBoost Tuned (Pipeline):\n\n{rep_str_xgb_t}")
 
-h(2, '5.5 Kurva ROC (Receiver Operating Characteristic)')
+h(2, '5.5 ROC Curve (Receiver Operating Characteristic)')
 para(
-    'Kurva ROC menggambarkan trade-off antara True Positive Rate (Sensitivitas) '
-    'dan False Positive Rate pada berbagai threshold. Strategi One-vs-Rest (OvR) digunakan '
-    'untuk menangani klasifikasi multikelas: setiap kelas dievaluasi secara independen '
-    'terhadap gabungan kelas lainnya. Area di bawah kurva (AUC) mendekati 1.0 '
-    'menandakan performa diskriminasi yang sangat baik.'
+    'The ROC curve illustrates the trade-off between the True Positive Rate (Sensitivity) '
+    'and the False Positive Rate at various thresholds. The One-vs-Rest (OvR) strategy is used '
+    'to handle multiclass classification: each class is evaluated independently '
+    'against the combination of the other classes. An Area Under the Curve (AUC) approaching 1.0 '
+    'indicates excellent discrimination performance.'
 )
 doc.add_picture(roc_curve_buf, width=Inches(6.2))
 doc.add_paragraph()
 
 h(2, '5.6 Explainable AI (SHAP)')
-para('Analisis SHAP (Shapley Additive exPlanations) untuk interpretasi model tuned pada skala global dan kelas Risiko Tinggi.')
+para('SHAP (Shapley Additive exPlanations) analysis for tuned model interpretation at a global scale and for the High-Risk class.')
 
 para('SHAP Random Forest (Tuned)', bold=True)
 doc.add_picture(shap_rf_buf, width=Inches(6.0))
@@ -830,74 +827,74 @@ if shap_xgb_tinggi_buf:
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  BAB 6: DEPLOYMENT                                          #
+#  CHAPTER 6: DEPLOYMENT                                      #
 # ═══════════════════════════════════════════════════════════ #
-h(1, '6. Deployment (Implementasi)')
-h(2, '6.1 Model Rekomendasi')
+h(1, '6. Deployment')
+h(2, '6.1 Recommended Model')
 para(
-    f'Berdasarkan seluruh hasil evaluasi, model yang direkomendasikan untuk '
-    f'deployment adalah: {best_name} (ROC-AUC = {best_roc:.4f}, F1-Macro = {best_f1:.4f}).'
+    f'Based on all evaluation results, the recommended model for '
+    f'deployment is: {best_name} (ROC-AUC = {best_roc:.4f}, F1-Macro = {best_f1:.4f}).'
 )
-h(2, '6.2 Rencana Implementasi')
+h(2, '6.2 Implementation Plan')
 for item in [
-    f'Simpan pipeline {best_name} (termasuk SMOTE step) menggunakan joblib/pickle.',
-    'Buat API inferensi (Flask/FastAPI) yang menerima input fitur klinis pasien.',
-    'Catatan: SMOTE dalam pipeline hanya aktif saat training, tidak saat inferensi.',
-    'Integrasikan dengan sistem informasi kesehatan (Puskesmas/SIMRS).',
+    f'Save the {best_name} pipeline (including the SMOTE step) using joblib/pickle.',
+    'Create an inference API (Flask/FastAPI) that accepts patient clinical feature inputs.',
+    'Note: SMOTE within the pipeline is only active during training, not during inference.',
+    'Integrate with health information systems (Puskesmas/SIMRS).',
 ]:
     bullet(item)
 
-h(2, '6.3 Keterbatasan Model')
+h(2, '6.3 Model Limitations')
 for item in [
-    'Dataset dari survei cross-sectional (SKI 2023), bukan data longitudinal klinis langsung.',
-    'Label risiko dihasilkan dari sistem pakar KSPR, bukan dari diagnosis dokter klinis.',
-    'N_ITER masih dapat ditingkatkan lebih lanjut untuk pencarian hyperparameter yang lebih optimal.',
+    'The dataset is from a cross-sectional survey (SKI 2023), not direct longitudinal clinical data.',
+    'Risk labels are generated from the KSPR expert system, not from a clinical doctor\'s diagnosis.',
+    'N_ITER can still be further increased for a more optimal hyperparameter search.',
 ]:
     bullet(item)
 doc.add_page_break()
 
 # ═══════════════════════════════════════════════════════════ #
-#  LAMPIRAN                                                   #
+#  APPENDIX                                                   #
 # ═══════════════════════════════════════════════════════════ #
-h(1, 'Lampiran: Alur Kerja CRISP-DM Lengkap')
-para('Dokumentasi lengkap setiap fase CRISP-DM – Versi 5 (Metodologi Pipeline yang Benar).')
+h(1, 'Appendix: Complete CRISP-DM Workflow')
+para('Complete documentation of each CRISP-DM phase – Version 5 (Correct Pipeline Methodology).')
 
 crisp_dm = [
     ('1. Business Understanding', [
-        ('Tujuan Analitik', 'Klasifikasi multikelas risiko kehamilan: Rendah (0), Sedang (1), Tinggi (2).'),
-        ('Kriteria Sukses', 'ROC-AUC ≥ 0.90, F1-macro ≥ 0.80, tidak ada data leakage.'),
+        ('Analytic Objective', 'Multiclass pregnancy risk classification: Low (0), Moderate (1), High (2).'),
+        ('Success Criteria', 'ROC-AUC ≥ 0.90, F1-macro ≥ 0.80, no data leakage.'),
     ]),
     ('2. Data Understanding', [
-        ('Volume Data',    f'{n_rows_raw:,} observasi, {n_cols_raw} kolom variabel.'),
-        ('Target Variabel', '"label_risiko" – kategorik ordinal 3 kelas.'),
+        ('Data Volume',    f'{n_rows_raw:,} observations, {n_cols_raw} variable columns.'),
+        ('Target Variable', '"label_risiko" – 3-class ordinal categorical.'),
     ]),
     ('3. Data Preparation', [
-        ('Penghapusan Fitur Leakage', 'Fitur persalinan/caesar + kolom ID unik di-drop.'),
-        ('Feature & Target Split',    f'X: {n_features} fitur,  y: label_risiko.'),
-        ('SMOTE Strategy',            'Melalui ImbPipeline – hanya pada training fold CV.'),
+        ('Leakage Feature Removal', 'Delivery/cesarean features + unique ID columns dropped.'),
+        ('Feature & Target Split',    f'X: {n_features} features,  y: label_risiko.'),
+        ('SMOTE Strategy',            'Via ImbPipeline – strictly on CV training folds.'),
     ]),
     ('4. Modeling', [
-        ('Metode Tuning',     f'RandomizedSearchCV + ImbPipeline + StratifiedKFold (5-fold).'),
+        ('Tuning Method',     f'RandomizedSearchCV + ImbPipeline + StratifiedKFold (5-fold).'),
         ('RF Best Params',    str(rf_best)),
         ('XGB Best Params',   str(xgb_best)),
-        ('Perbaikan vs v2',   'SMOTE masuk ke dalam pipeline → CV score lebih akurat.'),
+        ('Improvement vs v2',   'SMOTE integrated into the pipeline → more accurate CV scores.'),
     ]),
     ('5. Evaluation', [
-        ('Model Terbaik', f'{best_name} – ROC-AUC = {best_roc:.4f}, F1-Macro = {best_f1:.4f}'),
+        ('Best Model', f'{best_name} – ROC-AUC = {best_roc:.4f}, F1-Macro = {best_f1:.4f}'),
     ]),
     ('6. Deployment', [
-        ('Model Produksi', f'{best_name} direkomendasikan untuk deployment.'),
+        ('Production Model', f'{best_name} is recommended for deployment.'),
     ]),
 ]
 
 for phase_title, items in crisp_dm:
     h(2, phase_title)
     add_table(
-        ['Sub-fase / Aspek', 'Detail'],
+        ['Sub-phase / Aspect', 'Details'],
         [(k, v) for k, v in items]
     )
 
-# -- SAVE dengan fallback jika file sedang dibuka di Word --
+# -- SAVE with fallback if file is open in Word --
 try:
     doc.save(OUTPUT_FILE)
     saved_to = OUTPUT_FILE
@@ -905,19 +902,19 @@ except PermissionError:
     fallback = OUTPUT_FILE.replace('.docx', f'_{time.strftime("%H%M%S")}.docx')
     doc.save(fallback)
     saved_to = fallback
-    log(f"[WARNING] File utama sedang dibuka. Disimpan ke: {saved_to}")
-log(f"Dokumen Word tersimpan: {saved_to}")
+    log(f"[WARNING] Main file is open. Saved to: {saved_to}")
+log(f"Word Document saved: {saved_to}")
 print()
 print("=" * 65)
-print("RANGKUMAN HASIL AKHIR VERSI 5 (ImbPipeline CV)")
+print("FINAL RESULTS SUMMARY VERSION 5 (ImbPipeline CV)")
 print("=" * 65)
 print(f"  RF  Baseline  ->  Acc={acc_rf_b:.4f}  F1={f1_rf_b:.4f}  ROC={roc_rf_b:.4f}")
 print(f"  XGB Baseline  ->  Acc={acc_xgb_b:.4f}  F1={f1_xgb_b:.4f}  ROC={roc_xgb_b:.4f}")
 print(f"  RF  Tuned     ->  Acc={acc_rf_t:.4f}  F1={f1_rf_t:.4f}  ROC={roc_rf_t:.4f}")
 print(f"  XGB Tuned     ->  Acc={acc_xgb_t:.4f}  F1={f1_xgb_t:.4f}  ROC={roc_xgb_t:.4f}")
-print(f"  Model Terbaik : {best_name}  (ROC-AUC = {best_roc:.4f})")
+print(f"  Best Model    : {best_name}  (ROC-AUC = {best_roc:.4f})")
 print("=" * 65)
 if os.path.exists(CACHE_FILE):
-    print(f"  Cache tersedia di: {CACHE_FILE}")
-    print("  Run ulang berikutnya akan skip training & tuning (langsung dari cache).")
+    print(f"  Cache available at: {CACHE_FILE}")
+    print("  Subsequent runs will skip training & tuning (loaded directly from cache).")
 print("=" * 65)

@@ -49,8 +49,8 @@ xgb_tuned = cache['xgb_tuned']
 cm_rf_t = cache['cm_rf_t']
 cm_xgb_t = cache['cm_xgb_t']
 
-# --- 3. MENGHITUNG SPECIFICITY PER KELAS ---
-log("Menghitung Specificity per kelas...")
+# --- 3. CALCULATE SPECIFICITY PER CLASS ---
+log("Calculating Specificity per class...")
 def calc_specificity(cm):
     spec = []
     for i in range(len(cm)):
@@ -64,14 +64,14 @@ def calc_specificity(cm):
 spec_rf = calc_specificity(cm_rf_t)
 spec_xgb = calc_specificity(cm_xgb_t)
 
-print("\n--- SPECIFICITY PER KELAS ---")
-print("Kelas 0 (Rendah): RF={:.4f}, XGB={:.4f}".format(spec_rf[0], spec_xgb[0]))
-print("Kelas 1 (Sedang): RF={:.4f}, XGB={:.4f}".format(spec_rf[1], spec_xgb[1]))
-print("Kelas 2 (Tinggi): RF={:.4f}, XGB={:.4f}".format(spec_rf[2], spec_xgb[2]))
+print("\n--- SPECIFICITY PER CLASS ---")
+print("Class 0 (Low Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[0], spec_xgb[0]))
+print("Class 1 (Moderate Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[1], spec_xgb[1]))
+print("Class 2 (High Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[2], spec_xgb[2]))
 print("-----------------------------\n")
 
 # --- 4. SHAP DEPENDENCE PLOT ---
-log("Generating SHAP Dependence Plot untuk fitur usia ibu (umur_ibu_tahun)...")
+log("Generating SHAP Dependence Plot for maternal age (umur_ibu_tahun)...")
 X_test_sample = X_test.sample(min(300, len(X_test)), random_state=RANDOM_STATE)
 xgb_clf_step = xgb_tuned.named_steps['clf']
 explainer_xgb = shap.TreeExplainer(xgb_clf_step)
@@ -86,14 +86,14 @@ else:
 
 plt.figure(figsize=(8, 6))
 shap.dependence_plot("umur_ibu_tahun", shap_vals, X_test_sample, show=False)
-plt.title("XGBoost SHAP Dependence Plot: Usia Ibu (Risiko Sangat Tinggi)", pad=20)
+plt.title("XGBoost SHAP Dependence Plot: Maternal Age (Very High Risk)", pad=20)
 plt.tight_layout()
 plt.savefig("fig_shap_dep.png", dpi=150)
 plt.close()
-log("Berhasil menyimpan fig_shap_dep.png!")
+log("Successfully saved fig_shap_dep.png!")
 
-# --- 5. UJI STATISTIK WILCOXON & 10-FOLD CV (STD DEV) ---
-log("Melakukan 10-Fold CV untuk uji statistik Wilcoxon & Standar Deviasi (estimasi 3-4 menit)...")
+# --- 5. STATISTICAL TEST WILCOXON & 10-FOLD CV (STD DEV) ---
+log("Performing 10-Fold CV for Wilcoxon statistical test & Standard Deviation (estimated 3-4 mins)...")
 cv_wilcoxon = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE)
 
 # Note: rf_tuned and xgb_tuned are imblearn pipelines (which includes SMOTE)
@@ -104,11 +104,11 @@ stat_w, p_val_w = wilcoxon(rf_cv_scores, xgb_cv_scores)
 rf_cv_mean, rf_cv_std = np.mean(rf_cv_scores), np.std(rf_cv_scores)
 xgb_cv_mean, xgb_cv_std = np.mean(xgb_cv_scores), np.std(xgb_cv_scores)
 
-print("\n=== HASIL UJI REVIEWER (WILCOXON & STD DEV) ===")
+print("\n=== REVIEWER EVALUATION RESULTS (WILCOXON & STD DEV) ===")
 print(f"Random Forest (Tuned) 10-Fold CV F1-Macro : {rf_cv_mean:.4f} ± {rf_cv_std:.4f}")
 print(f"XGBoost (Tuned)       10-Fold CV F1-Macro : {xgb_cv_mean:.4f} ± {xgb_cv_std:.4f}")
-print(f"P-Value Uji Wilcoxon Signed-Rank          : {p_val_w:.5e}")
-wilcoxon_res = "SIGNIFIKAN" if p_val_w < 0.05 else "TIDAK SIGNIFIKAN"
-print(f"Kesimpulan                                : Perbedaan {wilcoxon_res} secara statistik.")
-print("=================================================")
-log("Semua proses revisi selesai.")
+print(f"Wilcoxon Signed-Rank P-Value              : {p_val_w:.5e}")
+wilcoxon_res = "SIGNIFICANT" if p_val_w < 0.05 else "NOT SIGNIFICANT"
+print(f"Conclusion                                : The difference is statistically {wilcoxon_res}.")
+print("=========================================================")
+log("All revision processes completed.")
