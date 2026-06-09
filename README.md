@@ -14,7 +14,7 @@ Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (par
 
 ## 📁 Struktur File & Script
 - `laporan_crisp_dm_v5.py`: Script *Machine Learning* utama (orisinal) yang mengeksekusi pipeline CRISP-DM.
-- `revisi_reviewer.py`: Script pendamping khusus untuk menjawab tuntutan dari reviewer jurnal (menghitung Uji Wilcoxon 10-Fold CV, kalkulasi Standar Deviasi, evaluasi Specificity, dan merender SHAP Dependence Plot).
+- `analisis_statistik_v5.py`: Script pendamping khusus untuk komputasi analisis statistik tingkat lanjut (menghitung Uji Wilcoxon 10-Fold CV, kalkulasi Standar Deviasi, evaluasi Specificity, dan merender SHAP Dependence Plot).
 - `.gitignore`: Filter keamanan agar dataset mentah, file *cache* berukuran besar, dan file rahasia lainnya tidak terunggah ke repositori publik.
 
 > **Catatan Privasi**: Dataset asli (`final_dataset_kspr_attala.csv`) dan file *model cache* (`.pkl`) sengaja tidak disertakan di GitHub untuk melindungi privasi responden kesehatan dan menghemat kuota server.
@@ -30,9 +30,9 @@ Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (par
    ```bash
    python laporan_crisp_dm_v5.py
    ```
-5. Untuk memproses metrik tambahan dan plot SHAP hasil evaluasi reviewer, jalankan:
+5. Untuk memproses metrik tambahan dan plot SHAP hasil analisis lanjutan, jalankan:
    ```bash
-   python revisi_reviewer.py
+   python analisis_statistik_v5.py
    ```
 
 ## 📈 Hasil Eksperimen
