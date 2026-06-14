@@ -66,8 +66,8 @@ spec_xgb = calc_specificity(cm_xgb_t)
 
 print("\n--- SPECIFICITY PER CLASS ---")
 print("Class 0 (Low Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[0], spec_xgb[0]))
-print("Class 1 (Moderate Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[1], spec_xgb[1]))
-print("Class 2 (High Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[2], spec_xgb[2]))
+print("Class 1 (High Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[1], spec_xgb[1]))
+print("Class 2 (Very High Risk): RF={:.4f}, XGB={:.4f}".format(spec_rf[2], spec_xgb[2]))
 print("-----------------------------\n")
 
 # --- 4. SHAP DEPENDENCE PLOT ---

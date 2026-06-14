@@ -29,7 +29,9 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV, Strati
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (classification_report, roc_auc_score,
                              confusion_matrix, f1_score, accuracy_score,
-                             roc_curve, auc)
+                             roc_curve, auc, balanced_accuracy_score,
+                             matthews_corrcoef, cohen_kappa_score,
+                             precision_recall_curve, average_precision_score)
 from sklearn.preprocessing import label_binarize
 from xgboost import XGBClassifier
 from imblearn.over_sampling import SMOTE
@@ -55,7 +57,7 @@ OUTPUT_FILE  = 'output_eksperimen/Laporan_CRISP_DM_Komputasi_v5.docx'
 CACHE_FILE   = 'output_eksperimen/v5_cache.pkl'
 DATA_FILE    = 'final_dataset_kspr_attala.csv'
 
-class_labels = {0: 'Low', 1: 'Moderate', 2: 'High'}
+class_labels = {0: 'Low', 1: 'High', 2: 'Very High'}
 
 def log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
@@ -341,8 +343,8 @@ plot_data = [
 ]
 for ax, (cm, ttl) in zip(axes.flatten(), plot_data):
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
-                xticklabels=['Low','Moderate','High'],
-                yticklabels=['Low','Moderate','High'])
+                xticklabels=['Low','High','Very High'],
+                yticklabels=['Low','High','Very High'])
     ax.set_title(ttl, fontsize=11, fontweight='bold')
     ax.set_xlabel('Prediksi'); ax.set_ylabel('Aktual')
 plt.suptitle('Confusion Matrix – Baseline vs Tuned (ImbPipeline)', fontsize=13, fontweight='bold')
@@ -391,7 +393,7 @@ log("Plot kurva ROC (OvR per kelas, 4 model)...")
 
 classes_list  = [0, 1, 2]
 class_colors  = ['#e84393', '#f59e0b', '#10b981']
-class_labels_roc = ['Low (0)', 'Moderate (1)', 'High (2)']
+class_labels_roc = ['Low (0)', 'High (1)', 'Very High (2)']
 
 y_test_bin = label_binarize(y_test, classes=classes_list)
 
@@ -648,7 +650,7 @@ para(
     'The dataset is sourced from the 2023 Indonesian Health Survey (SKI). '
     'Pregnancy risk labels are determined based on the Poedji Rochjati Score Card (KSPR) '
     'which is a clinically recognized expert system in Indonesia. '
-    'The class distribution is imbalanced: the Moderate Risk class dominates the dataset.'
+    'The class distribution is imbalanced: the High Risk class dominates the dataset.'
 )
 add_table(
     ['Characteristic', 'Value'],
@@ -672,7 +674,7 @@ add_table(
 )
 h(2, '2.3 Identification of Potential Issues')
 for item in [
-    'Imbalanced Class: Low Risk (0) is very rare compared to Moderate (1) → handled with SMOTE inside the pipeline.',
+    'Imbalanced Class: Low Risk (0) and Very High Risk (2) are minority classes compared to High Risk (1) → handled with SMOTE inside the pipeline.',
     'Data Leakage (Features): "operasi_caesar" / "metode_persalinan_sesar" are post-partum information → dropped.',
     'Data Leakage (CV): Applying SMOTE outside CV causes synthetic data to leak into validation folds → handled with ImbPipeline.',
     'Identification of unique IDs (member_id, household, etc.) → dropped to prevent overfitting.',
@@ -788,7 +790,7 @@ doc.add_picture(fi_buf, width=Inches(6.0))
 doc.add_page_break()
 
 h(2, '5.4 Classification Report')
-report_names = ['Low Risk (0)', 'Moderate Risk (1)', 'High Risk (2)']
+report_names = ['Low Risk (0)', 'High Risk (1)', 'Very High Risk (2)']
 
 rep_str_rf_b  = classification_report(y_test, y_pred_rf_b,  target_names=report_names)
 rep_str_xgb_b = classification_report(y_test, y_pred_xgb_b, target_names=report_names)
@@ -861,7 +863,7 @@ para('Complete documentation of each CRISP-DM phase – Version 5 (Correct Pipel
 
 crisp_dm = [
     ('1. Business Understanding', [
-        ('Analytic Objective', 'Multiclass pregnancy risk classification: Low (0), Moderate (1), High (2).'),
+        ('Analytic Objective', 'Multiclass pregnancy risk classification: Low (0), High (1), Very High (2).'),
         ('Success Criteria', 'ROC-AUC ≥ 0.90, F1-macro ≥ 0.80, no data leakage.'),
     ]),
     ('2. Data Understanding', [
