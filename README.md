@@ -52,7 +52,7 @@ The final experiments demonstrate that **Tuned XGBoost** achieved the highest pe
 Proyek ini bertujuan untuk membangun model prediksi risiko kehamilan berdasarkan parameter **Skor Poedji Rochjati (KSPR)** menggunakan dataset Survei Kesehatan Indonesia (SKI) 2023. Penelitian ini mengikuti metodologi **CRISP-DM** (*Cross-Industry Standard Process for Data Mining*).
 
 ## 🚀 Gambaran Umum
-Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (parallel bagging) dan **XGBoost** (sequential boosting) untuk mengklasifikasikan tingkat risiko maternal menjadi tiga kategori: **Risiko Rendah, Risiko Sedang, dan Risiko Sangat Tinggi**.
+Proyek ini melakukan analisis komparatif antara algoritma **Random Forest** (parallel bagging) dan **XGBoost** (sequential boosting) untuk mengklasifikasikan tingkat risiko maternal menjadi tiga kategori: **Risiko Rendah, Risiko Tinggi, dan Risiko Sangat Tinggi**.
 
 ### Pembaruan Utama (Versi 5):
 - **Pipeline Anti-Bocor (No Data Leakage)**: Implementasi `imblearn.pipeline.Pipeline` memastikan proses SMOTE (Synthetic Minority Over-sampling Technique) hanya dieksekusi pada data latih (*training fold*) saat Cross-Validation, menjaga kemurnian data validasi.
