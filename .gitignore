@@ -1,24 +1,39 @@
+# ─── Dataset & large binary files ──────────────────────────────────────────
 *.csv
 *.pkl
 *.docx
 *.pdf
 *.zip
+*.log
+
+# ─── Images (all figures excluded) ──────────────────────────────────────────
 *.png
 *.jpg
 *.jpeg
-*.log
-_docx_extracted/
-_panduan_extracted/
-_skill_extracted/
-laporan_v5_images/
-mendeley_images/
+figures_en/
+figures/
+
+# ─── Manuscript drafts (local only) ─────────────────────────────────────────
+humanized_article.md
+humanized_article_en.md
+humanized_article_backup.md
+
+# ─── Folders excluded from git ──────────────────────────────────────────────
+arsip_temp/
 output_eksperimen/
-__pycache__/
-*.mmd
-*.txt
-h u m a n i z e d _ a r t i c l e . m d  
 referensi_jurnal/
 materi_reviewer_dan_template/
-figures/
-arsip_temp/
 Proses Preprocessing/
+laporan_v5_images/
+__pycache__/
+
+# ─── Legacy / scratch scripts (kept locally, not pushed) ────────────────────
+laporan_crisp_dm_v5.py
+analisis_statistik_v5.py
+generate_english_plots_v2.py
+generate_english_plots_v3.py
+fix_shap_bar.py
+
+# ─── Other ──────────────────────────────────────────────────────────────────
+*.mmd
+dt_cache.pkl
