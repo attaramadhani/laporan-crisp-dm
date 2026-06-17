@@ -17,8 +17,8 @@ Cache
   All trained models and predictions are serialised to v5_cache.pkl.
   On subsequent runs, STAGE 3 & 4 are skipped automatically (loaded from cache).
 
-Hardware target : MSI Cyborg 15 A13V (i5-13420H, 12 threads)
-Dataset         : final_dataset_kspr_attala.csv
+Hardware target : 12-thread CPU (adjust N_JOBS in config as needed)
+Dataset         : SKI 2023 dataset (CSV format, place in same directory)
 Python ≥ 3.9    : pip install scikit-learn xgboost imbalanced-learn shap
                   matplotlib seaborn scipy joblib pillow
 """
@@ -55,7 +55,7 @@ from scipy.stats              import wilcoxon
 # ═══════════════════════════════════════════════════════════════════════════ #
 #  CONFIGURATION                                                             #
 # ═══════════════════════════════════════════════════════════════════════════ #
-DATA_FILE    = "final_dataset_kspr_attala.csv"
+DATA_FILE    = "dataset_ski_2023.csv"  # rename your dataset file to this, or change this value
 CACHE_FILE   = "v5_cache.pkl"
 OUTPUT_DIR   = "figures_en"
 RANDOM_STATE = 42
