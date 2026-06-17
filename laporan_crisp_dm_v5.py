@@ -522,6 +522,16 @@ def para(txt, bold=False, italic=False, align=None):
 def bullet(txt):
     doc.add_paragraph(txt, style='List Bullet')
 
+def calc_specificity(cm):
+    spec = []
+    for i in range(len(cm)):
+        tp = cm[i, i]
+        fn = np.sum(cm[i, :]) - tp
+        fp = np.sum(cm[:, i]) - tp
+        tn = np.sum(cm) - tp - fp - fn
+        spec.append(tn / (tn + fp) if (tn + fp) > 0 else 0.0)
+    return spec
+
 def add_table(headers, rows_data):
     tbl = doc.add_table(rows=1, cols=len(headers))
     tbl.style = 'Table Grid'
@@ -772,12 +782,10 @@ doc.add_page_break()
 h(1, '5. Evaluation')
 h(2, '5.1 Evaluation Metric Comparison')
 add_table(
-    ['Model', 'Scenario', 'Accuracy', 'F1-Macro', 'ROC-AUC (OvR)'],
+    ['Model & Scenario', 'Accuracy', 'F1-Macro', 'ROC-AUC (OvR)'],
     [
-        ('Random Forest', 'Baseline',        f'{acc_rf_b:.4f}',  f'{f1_rf_b:.4f}',  f'{roc_rf_b:.4f}'),
-        ('XGBoost',       'Baseline',        f'{acc_xgb_b:.4f}', f'{f1_xgb_b:.4f}', f'{roc_xgb_b:.4f}'),
-        ('Random Forest', 'Tuned (Pipeline)', f'{acc_rf_t:.4f}',  f'{f1_rf_t:.4f}',  f'{roc_rf_t:.4f}'),
-        ('XGBoost',       'Tuned (Pipeline)', f'{acc_xgb_t:.4f}', f'{f1_xgb_t:.4f}', f'{roc_xgb_t:.4f}'),
+        ('Random Forest Tuned (Pipeline)', f'{acc_rf_t:.4f}',  f'{f1_rf_t:.4f}',  f'{roc_rf_t:.4f}'),
+        ('XGBoost Tuned (Pipeline)',       f'{acc_xgb_t:.4f}', f'{f1_xgb_t:.4f}', f'{roc_xgb_t:.4f}'),
     ]
 )
 
@@ -790,17 +798,20 @@ doc.add_picture(fi_buf, width=Inches(6.0))
 doc.add_page_break()
 
 h(2, '5.4 Classification Report')
-report_names = ['Low Risk (0)', 'High Risk (1)', 'Very High Risk (2)']
+spec_rf_t = calc_specificity(cm_rf_t)
+spec_xgb_t = calc_specificity(cm_xgb_t)
 
-rep_str_rf_b  = classification_report(y_test, y_pred_rf_b,  target_names=report_names)
-rep_str_xgb_b = classification_report(y_test, y_pred_xgb_b, target_names=report_names)
-rep_str_rf_t  = classification_report(y_test, y_pred_rf_t,  target_names=report_names)
-rep_str_xgb_t = classification_report(y_test, y_pred_xgb_t, target_names=report_names)
-
-add_monospaced_block(f"Classification Report - Random Forest Baseline:\n\n{rep_str_rf_b}")
-add_monospaced_block(f"Classification Report - XGBoost Baseline:\n\n{rep_str_xgb_b}")
-add_monospaced_block(f"Classification Report - Random Forest Tuned (Pipeline):\n\n{rep_str_rf_t}")
-add_monospaced_block(f"Classification Report - XGBoost Tuned (Pipeline):\n\n{rep_str_xgb_t}")
+add_table(
+    ['Model', 'Class Level', 'Precision', 'Recall', 'Specificity', 'F1-Score', 'Support'],
+    [
+        ('Random Forest (Tuned)', 'Low Risk (0)', f'{report_rf_t["0"]["precision"]:.4f}', f'{report_rf_t["0"]["recall"]:.4f}', f'{spec_rf_t[0]:.4f}', f'{report_rf_t["0"]["f1-score"]:.4f}', f'{report_rf_t["0"]["support"]:,}'),
+        ('',                      'High Risk (1)', f'{report_rf_t["1"]["precision"]:.4f}', f'{report_rf_t["1"]["recall"]:.4f}', f'{spec_rf_t[1]:.4f}', f'{report_rf_t["1"]["f1-score"]:.4f}', f'{report_rf_t["1"]["support"]:,}'),
+        ('',                      'Very High Risk (2)', f'{report_rf_t["2"]["precision"]:.4f}', f'{report_rf_t["2"]["recall"]:.4f}', f'{spec_rf_t[2]:.4f}', f'{report_rf_t["2"]["f1-score"]:.4f}', f'{report_rf_t["2"]["support"]:,}'),
+        ('XGBoost (Tuned)',       'Low Risk (0)', f'{report_xgb_t["0"]["precision"]:.4f}', f'{report_xgb_t["0"]["recall"]:.4f}', f'{spec_xgb_t[0]:.4f}', f'{report_xgb_t["0"]["f1-score"]:.4f}', f'{report_xgb_t["0"]["support"]:,}'),
+        ('',                      'High Risk (1)', f'{report_xgb_t["1"]["precision"]:.4f}', f'{report_xgb_t["1"]["recall"]:.4f}', f'{spec_xgb_t[1]:.4f}', f'{report_xgb_t["1"]["f1-score"]:.4f}', f'{report_xgb_t["1"]["support"]:,}'),
+        ('',                      'Very High Risk (2)', f'{report_xgb_t["2"]["precision"]:.4f}', f'{report_xgb_t["2"]["recall"]:.4f}', f'{spec_xgb_t[2]:.4f}', f'{report_xgb_t["2"]["f1-score"]:.4f}', f'{report_xgb_t["2"]["support"]:,}'),
+    ]
+)
 
 h(2, '5.5 ROC Curve (Receiver Operating Characteristic)')
 para(
