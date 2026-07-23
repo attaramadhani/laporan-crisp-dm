@@ -1,39 +1,45 @@
-# ─── Dataset & large binary files ──────────────────────────────────────────
+# ─── Datasets & Large Data Files ──────────────────────────────────────────────
 *.csv
+*.tsv
+
+# ─── Model Caches & Binary Weights ───────────────────────────────────────────
 *.pkl
+*.joblib
+*.dat
+
+# ─── Output Documents & Manuscripts ─────────────────────────────────────────
 *.docx
 *.pdf
 *.zip
 *.log
-
-# ─── Images (all figures excluded) ──────────────────────────────────────────
-*.png
-*.jpg
-*.jpeg
-figures_en/
-figures/
-
-# ─── Manuscript drafts (local only) ─────────────────────────────────────────
+laporan_hasil_eksperimen.docx
+experimental_results_report.docx
 humanized_article.md
 humanized_article_en.md
 humanized_article_backup.md
 
-# ─── Folders excluded from git ──────────────────────────────────────────────
+# ─── Generated Output Figures & Media ──────────────────────────────────────
+*.png
+*.jpg
+*.jpeg
+*.svg
+figures/
+figures_final/
+figures_en/
+laporan_v5_images/
+
+# ─── Local Directories & Archives ─────────────────────────────────────────
 arsip_temp/
 output_eksperimen/
 referensi_jurnal/
 materi_reviewer_dan_template/
 Proses Preprocessing/
-laporan_v5_images/
 __pycache__/
 
-# ─── Legacy / scratch scripts (kept locally, not pushed) ────────────────────
-laporan_crisp_dm_v5.py
-analisis_statistik_v5.py
-generate_english_plots_v2.py
-generate_english_plots_v3.py
-fix_shap_bar.py
-
-# ─── Other ──────────────────────────────────────────────────────────────────
-*.mmd
-dt_cache.pkl
+# ─── Python Environment & IDE ──────────────────────────────────────────────
+.venv/
+env/
+venv/
+.idea/
+.vscode/
+.DS_Store

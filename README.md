@@ -1,23 +1,26 @@
-# Maternal Risk Classification using Machine Learning
+# Maternal Risk Classification using Machine Learning (SKI 2023)
 
-> **Dataset:** 2023 Indonesian Health Survey (SKI) — Ministry of Health of Indonesia  
+> **Dataset:** 2023 Indonesian Health Survey (Survei Kesehatan Indonesia - SKI) — Ministry of Health of Indonesia  
+> **Author / Penulis:** Attala Alif Ramadhani Tri Hida  
 > **Models:** Random Forest vs XGBoost · **Framework:** CRISP-DM  
-> **Task:** 3-class classification — Low Risk / High Risk / Very High Risk
+> **Task:** 3-Class Multiclass Risk Classification — Low Risk / High Risk / Very High Risk
 
 ---
 
 ## Overview
 
-This study applies a comparative machine learning approach to classify maternal risk levels based on the **Poedji Rochjati Score Card (KSPR)** parameters derived from the SKI 2023 national survey dataset.
+This repository contains the complete, reproducible machine learning pipeline for classifying maternal health risk levels based on the **Poedji Rochjati Score Card (KSPR)** parameters derived from the SKI 2023 national survey dataset ($N = 211,351$).
 
-Key methodological features:
+### Key Methodological Highlights:
 
-| Aspect | Implementation |
+| Methodological Aspect | Technical Implementation |
 |---|---|
-| Pipeline (no leakage) | `imblearn.Pipeline` — SMOTE applied only inside CV folds |
-| Hyperparameter tuning | `RandomizedSearchCV` · 5-Fold CV · 50 iter (RF), 60 iter (XGBoost) |
-| Statistical validation | 10-Fold CV + **Wilcoxon Signed-Rank Test** |
-| Interpretability (XAI) | **SHAP** — Summary Plot, Waterfall, Dependence Plots |
+| **Leakage-Free Pipeline** | `imblearn.Pipeline` — SMOTE resampling ($k=5$) applied strictly inside Cross-Validation folds |
+| **Data Cleaning** | Excluded administrative IDs and post-hoc cesarean delivery columns to eliminate data leakage |
+| **Hyperparameter Tuning** | `RandomizedSearchCV` · 5-Fold Stratified CV (Random Forest & XGBoost) |
+| **Statistical Validation** | 10-Fold CV + **Wilcoxon Signed-Rank Test** for statistical significance testing |
+| **Explainable AI (XAI)** | **SHAP** — Summary Bee Swarm Plots, Local Patient Waterfall Plots, Dependence Plots |
+| **Automated Reporting** | Generates publication-grade figures (200 DPI) and full Word reports (`laporan_hasil_eksperimen.docx`) |
 
 ---
 
@@ -25,66 +28,74 @@ Key methodological features:
 
 ```
 .
-├── main.py       ← single unified pipeline script
-├── README.md
-└── .gitignore
+├── main.py       ← Single master pipeline & figure/report generator
+├── README.md     ← Documentation & setup guide
+└── .gitignore    ← Excludes dataset CSVs, model caches, output figures, and Word reports
 ```
 
-> The raw dataset, trained model cache, output figures, and manuscript drafts
-> are excluded from this repository (see `.gitignore`).
+> **Privacy & Reproducibility:** Raw survey CSV datasets, trained model binary caches (`model_cache.pkl`), generated output figures, and Word document reports are excluded from this repository per `.gitignore` guidelines to protect respondent privacy and maintain a lightweight code repository.
 
 ---
 
-## How to Run
+## Getting Started & Execution Guide
 
-### 1. Install dependencies
+### 1. Install Required Dependencies
+
+Ensure Python $\ge 3.9$ is installed, then install the required dependencies:
 
 ```bash
 pip install pandas numpy matplotlib seaborn scikit-learn xgboost \
-            imbalanced-learn shap scipy joblib pillow
+            imbalanced-learn shap scipy joblib pillow python-docx
 ```
 
-### 2. Prepare dataset
+### 2. Prepare the Dataset
 
-Place the SKI 2023 dataset file in the same directory as `main.py`,
-then set the `DATA_FILE` variable at the top of `main.py` accordingly.
+Place your SKI 2023 dataset CSV file in the same directory as `main.py` and name it `dataset_ski_2023.csv`:
 
-> **Privacy:** The dataset is sourced from the
-> [Ministry of Health of Indonesia](https://layanandata.kemkes.go.id/)
-> and is excluded from this repository to protect respondent privacy.
+```
+.
+├── dataset_ski_2023.csv
+└── main.py
+```
 
-### 3. Run
+> **Privacy Note:** The SKI 2023 national survey dataset is managed by the [Ministry of Health of Indonesia (Kemenkes RI)](https://layanandata.kemkes.go.id/) and is kept private.
+
+### 3. Run the Pipeline
+
+Execute the master pipeline script:
 
 ```bash
 python main.py
 ```
 
-**First run** (~30–60 min, hardware-dependent):
-1. Loads and preprocesses the dataset
-2. Trains baseline models (RF & XGBoost, without tuning)
-3. Performs hyperparameter tuning via `RandomizedSearchCV` (5-Fold CV)
-4. Saves trained models to a local cache file
-5. Runs 10-Fold CV + Wilcoxon Signed-Rank Test
-6. Generates all figures to `figures_en/` folder
-
-**Subsequent runs** (cache found → training skipped, ~5–10 min):  
-Loads the cached models and proceeds directly to statistical validation and figure generation.
+**Automatic Pipeline Behavior:**
+1. **Dataset Preprocessing:** Loads `dataset_ski_2023.csv`, drops administrative IDs and leakage columns, performs an 80/20 stratified split into training ($n = 169,080$) and hold-out test ($n = 42,271$) sets.
+2. **Model Training & Tuning (First Run):** If `model_cache.pkl` is absent, trains baseline models, performs 5-fold CV hyperparameter tuning using `RandomizedSearchCV`, evaluates hold-out predictions, and automatically saves `model_cache.pkl`.
+3. **Cache Loading (Subsequent Runs):** Loads `model_cache.pkl` directly for instant execution (< 10 seconds).
+4. **Statistical Validation:** Computes 10-Fold CV summaries, per-class specificity scores, and the Wilcoxon Signed-Rank Test.
+5. **Figure Generation:** Renders Figures 2–6 in standard publication font sizes to `figures_final/` and `figures_en/`.
+6. **Word Report Export:** Automatically creates `laporan_hasil_eksperimen.docx` containing complete execution tables, statistical test results, and embedded high-resolution figures.
 
 ---
 
-## Results
+## Experimental Results Summary
 
-| Model | Accuracy | F1-Macro | ROC-AUC (OvR) |
-|---|---|---|---|
-| RF Baseline | 0.9539 | 0.8474 | 0.9913 |
-| XGB Baseline | 0.9565 | 0.8566 | 0.9940 |
-| RF Tuned | 0.9568 | 0.8635 | 0.9914 |
-| **XGB Tuned** | **0.9614** | **0.9207** | **0.9946** |
+Evaluated on the independent hold-out test set ($n = 42,271$):
 
-Wilcoxon Signed-Rank Test: **p < 0.05** — the performance difference between
-Tuned XGBoost and Tuned Random Forest is statistically significant.
+| Model Variant | Accuracy | F1-Macro | ROC-AUC (Macro OvR) | PR-AUC (Macro OvR) |
+|---|---|---|---|---|
+| Random Forest (Baseline) | 0.9477 | 0.9169 | 0.9931 | 0.9712 |
+| XGBoost (Baseline) | 0.9510 | 0.9200 | 0.9944 | 0.9745 |
+| Random Forest (Tuned) | 0.9480 | 0.9184 | 0.9934 | 0.9720 |
+| **XGBoost (Tuned - Best Model)** | **0.9516** | **0.9207** | **0.9946** | **0.9754** |
+
+### Statistical Significance:
+* **Wilcoxon Signed-Rank Test:** $Z = 0.0000$, $p = 1.50 \times 10^{-4}$ ($p < 0.05$) — the performance superiority of Tuned XGBoost over Tuned Random Forest is **statistically significant**.
 
 ---
 
-*This project is developed for scientific research purposes in the context of
-maternal health risk early-warning systems.*
+## Author & Citation
+
+* **Author:** Attala Alif Ramadhani Tri Hida  
+* **Repository:** [https://github.com/attaramadhani/laporan-crisp-dm](https://github.com/attaramadhani/laporan-crisp-dm)  
+* **Purpose:** Research and development of early-warning decision support systems for maternal health risk assessment.
